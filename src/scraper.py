@@ -6,44 +6,44 @@ from selenium.webdriver.common.by import By
 import time
 
 def universal_cookie_accept(driver):
-    # 1. Lista de ID-uri și Clase comune folosite de platformele mari (OneTrust, CookieBot, etc.)
+    #  lista de id uri și clase comune folosite de platformele mari (OneTrust, CookieBot, etc.)
     common_selectors = [
         "cn-accept-cookie", "accept-cookie", "ez-accept-all",
         "hs-eu-confirmation-button", "L2AGLb", "allow-all",
         "cookie_action_close_header_accept"
     ]
 
-    # 2. Cuvinte cheie pentru butoane (pe care le căutăm în textul butonului)
+    #  cuvinte cheie pentru butoane
     keywords = ["Accept", "Ok", "Acceptă", "Agree", "Allow all", "Sunt de acord", "Accepta tot"]
 
-    print("🤖 Încercare acceptare automată banner cookies...")
+    print("Incercare acceptare automata banner cookies. ")
 
-    # Strategia A: Căutare după ID-uri cunoscute
+    # 1 cautare dupa id uri cunoscute
     for selector in common_selectors:
         try:
             btn = driver.find_element(By.ID, selector)
             if btn.is_displayed():
                 driver.execute_script("arguments[0].click();", btn)
-                print(f"✅ Detectat după ID: {selector}")
+                print(f" Detectat după ID: {selector}")
                 return True
         except:
             continue
 
-    # Strategia B: Căutare după textul butonului (cea mai puternică metodă)
+    # 2 cautare dupa textul butonului
     for word in keywords:
         try:
-            # Caută orice element de tip buton sau link care conține cuvântul respectiv
+            # cauta orice element de tip buton sau link care contine cuvantul respectiv
             xpath = f"//*[(self::a or self::button or self::span) and contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{word.lower()}')]"
             btns = driver.find_elements(By.XPATH, xpath)
             for btn in btns:
                 if btn.is_displayed():
                     driver.execute_script("arguments[0].click();", btn)
-                    print(f"✅ Detectat după text: {word}")
+                    print(f"Detectat după text: {word}")
                     return True
         except:
             continue
 
-    print("⚠️ Nu am găsit niciun banner de cookies evident.")
+    print("  Nu am gasit niciun banner de cookies evident.")
     return False
 
 # functie care primeste site ul si colecteaza cookie urile

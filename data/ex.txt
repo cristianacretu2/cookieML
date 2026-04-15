@@ -26,3 +26,8 @@ in folderul model o sa fie
 
 datasetul este luat de pe github
 https://github.com/jkwakman/Open-Cookie-Database/blob/master/open-cookie-database.csv
+
+
+CU CE AM VERIFICAT SI DUPA CE MA IAU
+
+https://cookie-script.com/quick-report?identifier=d9b6ed12d6f58c3eaf05333d03e57743
