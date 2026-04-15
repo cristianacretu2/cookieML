@@ -1,0 +1,28 @@
+
+formatul datelor
+
+name,domain,value,expiry,label
+
+_ga,google.com,analytics:yes,2026-01-01,2
+_fbp,facebook.com,advertisement:yes,2026-01-01,3
+session_id,mysite.com,necessary:yes,session,0
+cookieyes-consent,cookiesearch.org,necessary:yes,2027-01-01,0
+
+de tipul .csv
+
+ clasificare standard. trebuie sa fie in label in csv
+0 - necessary
+1 - functionality/ preferences
+2 - analytics
+3 - ads/ marketing
+
+in folderul model o sa fie
+    modelele antrenate cu extensia .pkl
+    vectorizer.pkl -> necesar pt model (obiect, facut cu joblib, care transforma text in numere,
+                    ptc modelul analizeaza numere. nu stie text)
+
+    .json cu info despre model
+
+
+datasetul este luat de pe github
+https://github.com/jkwakman/Open-Cookie-Database/blob/master/open-cookie-database.csv
