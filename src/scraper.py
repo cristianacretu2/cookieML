@@ -52,19 +52,19 @@ def get_cookies(url):
     driver = webdriver.Chrome() # deschidem  un Chrome
 
     driver.get(url) # intram pe site
-    time.sleep(5)
+    time.sleep(3)
     # mai intai dam click pe accept all
 
     if universal_cookie_accept(driver):
         time.sleep(1)
         driver.refresh()  # Esențial pentru activarea trackere-lor
-        time.sleep(5)
+        time.sleep(3)
 
     # dam un scroll pt a declansa alte scripturi
     driver.execute_script("return window.scrollTo(0, document.body.scrollHeight);")
 
 
-    time.sleep(5) # un delay ca sa se incarce scripturile
+    time.sleep(3) # un delay ca sa se incarce scripturile
 
     cookies = driver.get_cookies() # extragem toate cookie urile stocate in browser pt domeniul respectiv
     current_url = driver.current_url # luam url pt a face diferenta intre first party si third party

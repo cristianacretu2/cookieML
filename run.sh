@@ -1,30 +1,25 @@
 #!/bin/bash
 
-# rulam asta cand vrem sa verificam site
-# ./run.sh site
+# ./run.sh https://site.ro
+# ./run.sh https://site.ro --max-pages 10
+# ./run.sh https://site.ro --max-pages 5 --output raport_custom.html
 
-if [ -z "$1" ]
-then
-      echo "Eroare: Introdu URL."
-      echo "Utilizare: ./run.sh https://exemplu.com"
-      exit 1
+if [ -z "$1" ]; then
+    echo "Eroare: Introdu URL."
+    echo "Utilizare: ./run.sh https://exemplu.com"
+    exit 1
 fi
 
-URL=$1
+# ne asiguram ca suntem in directorul proiectului
+cd "$(dirname "$0")"
 
-echo " Pornire scanare pentru: $URL"
+# activam venv daca exista
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+fi
 
-python3 << END
-import sys
-from src.analyzer import analyze_site
-import json
+echo "Pornire scanare pentru: $1"
 
-try:
-    results = analyze_site("$URL")
-    print("\n--- REZULTATE SCANARE ---")
-    print(json.dumps(results, indent=4))
-    print("-------------------------\n")
-    print(f" Scanare finalizată. Am găsit {len(results)} cookie-uri.")
-except Exception as e:
-    print(f" A apărut o eroare la scanare: {e}")
-END
+# transmitem TOȚI parametrii mai departe către main.py
+# $@ = toate argumentele date lui run.sh
+python3 main.py "$@"

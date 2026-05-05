@@ -31,3 +31,20 @@ https://github.com/jkwakman/Open-Cookie-Database/blob/master/open-cookie-databas
 CU CE AM VERIFICAT SI DUPA CE MA IAU
 
 https://cookie-script.com/quick-report?identifier=d9b6ed12d6f58c3eaf05333d03e57743
+
+
+# CE E RANDOMFOREST?
+# E o colecție de "arbori de decizie" (Decision Trees).
+# Un singur arbore de decizie e ca un flowchart:
+#   "Dacă third_party=1 și entropy>0.8 și duration>365 -> Marketing"
+#
+# Problema cu un singur arbore: se poate "supraaprende" (overfitting) —
+# memorează datele de antrenament în loc să învețe tipare generale.
+#
+# RandomForest rezolvă asta cu un truc ingenios:
+# - Creează 200 de arbori diferiți (n_estimators=200)
+# - Fiecare arbore vede doar un subset random de date și de features
+# - La predicție, fiecare arbore votează, câștigă majoritatea
+# - Media a 200 de arbori e mult mai stabilă decât unul singur
+#
+# Analogia: întrebi 200 de experți independenți, nu te bazezi pe unul singur.
