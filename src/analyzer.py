@@ -158,6 +158,10 @@ def gdpr_verdict(score):
             "color": "green",
             "emoji": "✅",
             "verdict": "Site-ul folosește puține cookies non-esențiale.",
+            "actions": [
+                "Verificați că aveți politica de cookies actualizată.",
+                "Asigurați-vă că cookies esențiale nu necesită consent.",
+            ]
 
         }
     elif score <= 50:
@@ -166,6 +170,11 @@ def gdpr_verdict(score):
             "color": "yellow",
             "emoji": "⚠️",
             "verdict": "Site-ul are cookies de analytics care necesită consent.",
+            "actions": [
+                "Implementați un banner de cookies conform (OneTrust, CookieYes etc.)",
+                "Blocați cookies analytics până la obținerea consimțământului.",
+                "Actualizați politica de confidențialitate cu toate cookie-urile.",
+            ]
 
         }
     else:
@@ -174,6 +183,13 @@ def gdpr_verdict(score):
             "color": "red",
             "emoji": "🔴",
             "verdict": "Site-ul are tracking marketing extensiv — risc GDPR semnificativ.",
+            "actions": [
+                "OBLIGATORIU: Implementați consent management platform (CMP).",
+                "Blocați TOATE cookies marketing și analytics până la consent.",
+                "Efectuați un audit GDPR complet cu specialist juridic.",
+                "Verificați că aveți bază legală pentru fiecare cookie.",
+                "Asigurați-vă că utilizatorii pot retrage consimțământul ușor.",
+            ]
 
         }
 

@@ -14,7 +14,7 @@ def universal_cookie_accept(driver):
     ]
 
     #  cuvinte cheie pentru butoane
-    keywords = ["Accept", "Ok", "Acceptă", "Agree", "Allow all", "Sunt de acord", "Accepta tot"]
+    keywords = ["Accept", "Ok", "Acceptă", "Agree", "Allow all", "Sunt de acord", "Accepta tot", "Dagit "]
 
     print("Incercare acceptare automata banner cookies. ")
 

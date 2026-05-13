@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Audit — https://ac.tuiasi.ro/</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ============================================================
+     RESET & VARIABILE
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font-main:   'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono:   'Cascadia Code', 'Fira Code', monospace;
+    --bg:          #f8fafc;
+    --surface:     #ffffff;
+    --border:      #e2e8f0;
+    --text:        #1e293b;
+    --text-muted:  #64748b;
+    --accent:      #6366f1;   /* indigo — culoarea principală */
+    --radius:      12px;
+    --shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg:   0 10px 15px -3px rgba(0,0,0,0.1);
+  }
+
+  body {
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* Header principal */
+  .header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+    color: white;
+    padding: 40px;
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .header-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .header .site-url { font-size: 16px; opacity: 0.8; margin-bottom: 16px; }
+  .header .meta { font-size: 13px; opacity: 0.6; }
+
+  /* ============================================================
+     CARDURI METRICE (rândul de sus)
+     ============================================================ */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ============================================================
+     RÂNDUL CU GRAFICE + GDPR
+     ============================================================ */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .charts-row { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 20px;
+  }
+
+  .chart-container { height: 200px; position: relative; }
+
+  /* GDPR Score */
+  .gdpr-score-display {
+    text-align: center;
+    padding: 16px;
+    border-radius: 8px;
+    background: #f0fdf4;
+    margin-bottom: 16px;
+  }
+
+  .gdpr-score-number {
+    font-size: 56px;
+    font-weight: 800;
+    color: #22c55e;
+    line-height: 1;
+  }
+
+  .gdpr-score-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .gdpr-verdict-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f0fdf4;
+    color: #22c55e;
+    border: 1.5px solid #22c55e40;
+    margin-bottom: 12px;
+  }
+
+  .gdpr-verdict-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     RECOMANDĂRI
+     ============================================================ */
+  .recommendations { margin-bottom: 24px; }
+
+  .recommendations .card-title { margin-bottom: 12px; }
+
+  .recommendation-item {
+    padding: 10px 14px;
+    border-left: 3px solid #22c55e;
+    background: #f0fdf4;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text);
+    list-style: none;
+  }
+
+  /* ============================================================
+     TABEL COOKIES
+     ============================================================ */
+  .table-section { margin-bottom: 24px; }
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .table-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    font-size: 13px;
+  }
+
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    background: #f8fafc;
+  }
+
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr.hidden { display: none; }
+
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  td:first-child { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .conf-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .conf-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #e2e8f0;
+    width: 60px;
+    overflow: hidden;
+  }
+  .conf-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+  .conf-text { font-size: 11px; color: var(--text-muted); min-width: 30px; }
+
+  .party-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .party-third {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .party-first {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  /* Badge metodă clasificare */
+  .method-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .method-known    { background: #eff6ff; color: #1d4ed8; }
+  .method-ml       { background: #f5f3ff; color: #6d28d9; }
+  .method-uncertain { background: #fff7ed; color: #c2410c; }
+
+  /* Sectiune explicativa metode */
+  .method-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+
+  .method-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+  }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">Cookie Audit Report</div>
+    <h1>🍪 GDPR Cookie Scanner</h1>
+    <div class="site-url">https://ac.tuiasi.ro/</div>
+    <div class="meta">
+      Scanat pe: 05 May 2026, 12:42 &nbsp;·&nbsp;
+      20 pagini analizate &nbsp;·&nbsp;
+      6 cookies unice
+    </div>
+  </div>
+
+  <!-- METRICI PRINCIPALE -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Total cookies</div>
+      <div class="metric-value">6</div>
+      <div class="metric-sub">unice pe site</div>
+    </div>
+    <div class="metric-card" style="--accent: #22c55e">
+      <div class="metric-label">Strictly Necessary</div>
+      <div class="metric-value">0</div>
+      <div class="metric-sub">nu necesită consent</div>
+    </div>
+    <div class="metric-card" style="--accent: #f59e0b">
+      <div class="metric-label">Analytics</div>
+      <div class="metric-value">4</div>
+      <div class="metric-sub">necesită consent</div>
+    </div>
+    <div class="metric-card" style="--accent: #ef4444">
+      <div class="metric-label">Marketing</div>
+      <div class="metric-value">0</div>
+      <div class="metric-sub">risc GDPR ridicat</div>
+    </div>
+    <div class="metric-card" style="--accent: #3b82f6">
+      <div class="metric-label">Preferences</div>
+      <div class="metric-value">0</div>
+      <div class="metric-sub">necesită consent</div>
+    </div>
+    <div class="metric-card" style="--accent: #8b5cf6">
+      <div class="metric-label">Third-party</div>
+      <div class="metric-value">4</div>
+      <div class="metric-sub">66.7% din total</div>
+    </div>
+  </div>
+
+  <!-- GRAFICE + GDPR — 4 coloane -->
+  <div class="charts-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
+
+    <!-- Grafic donut categorii -->
+    <div class="card">
+      <div class="card-title">Distribuție categorii</div>
+      <div class="chart-container">
+        <canvas id="categoriesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Grafic First vs Third party -->
+    <div class="card">
+      <div class="card-title">First vs Third-party</div>
+      <div class="chart-container">
+        <canvas id="partyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Grafic metode clasificare NOU -->
+    <div class="card">
+      <div class="card-title">Metode de clasificare</div>
+      <div class="chart-container">
+        <canvas id="methodChart"></canvas>
+      </div>
+    </div>
+
+    <!-- GDPR Score -->
+    <div class="card">
+      <div class="card-title">GDPR Risk Score</div>
+      <div class="gdpr-score-display">
+        <div class="gdpr-score-number">3</div>
+        <div class="gdpr-score-label">din 100</div>
+      </div>
+      <div class="gdpr-verdict-level">
+        ✅ Risc Scăzut
+      </div>
+      <div class="gdpr-verdict-text">Site-ul folosește puține cookies non-esențiale.</div>
+    </div>
+
+  </div>
+
+  <!-- RECOMANDĂRI GDPR -->
+  <div class="card recommendations">
+    <div class="card-title">⚡ Acțiuni recomandate</div>
+    <ul><li class="recommendation-item">Verificați că aveți politica de cookies actualizată.</li><li class="recommendation-item">Asigurați-vă că cookies esențiale nu necesită consent.</li></ul>
+  </div>
+
+  <!-- TABEL COOKIES -->
+  <div class="table-section">
+    <div class="table-header">
+      <h2>📋 Toate cookie-urile (6)</h2>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTable('all', event)">Toate (6)</button>
+      <button class="filter-btn" onclick="filterTable('cat:Marketing', event)" style="border-color: #fecaca; color: #dc2626">
+        🔴 Marketing (0)
+      </button>
+      <button class="filter-btn" onclick="filterTable('cat:Analytics', event)" style="border-color: #fde68a; color: #d97706">
+        🟡 Analytics (4)
+      </button>
+      <button class="filter-btn" onclick="filterTable('cat:Strictly Necessary', event)" style="border-color: #bbf7d0; color: #16a34a">
+        🟢 Necessary (0)
+      </button>
+      <button class="filter-btn" onclick="filterTable('cat:Preferences', event)" style="border-color: #bfdbfe; color: #2563eb">
+        🔵 Preferences (0)
+      </button>
+      <button class="filter-btn" onclick="filterTable('party:third', event)" style="border-color: #e9d5ff; color: #7c3aed">
+        Third-party (4)
+      </button>
+      <button class="filter-btn" onclick="filterTable('method:known_cookie', event)" style="border-color: #bfdbfe; color: #1d4ed8">
+        🔷 Dicționar (4)
+      </button>
+      <button class="filter-btn" onclick="filterTable('method:ml', event)" style="border-color: #ddd6fe; color: #6d28d9">
+        🤖 Model ML (0)
+      </button>
+      <button class="filter-btn" onclick="filterTable('method:ml_uncertain', event)" style="border-color: #fed7aa; color: #c2410c">
+        ⚠ Nesigur (2)
+      </button>
+    </div>
+
+    <!-- Legendă explicativă metode -->
+    <div class="method-legend">
+      <div class="method-legend-item">
+        <span class="method-tag method-known">🔷 Dicționar</span>
+        Cookie identificat cu certitudine 100% din lista hardcodată (_ga, _fbp etc.)
+      </div>
+      <div class="method-legend-item">
+        <span class="method-tag method-ml">🤖 Model ML</span>
+        Clasificat de RandomForest pe baza celor 14 features, confidence ≥ 55%
+      </div>
+      <div class="method-legend-item">
+        <span class="method-tag method-uncertain">⚠ Nesigur</span>
+        Modelul are confidence &lt; 55% — cookie necunoscut, necesită review manual
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="cookiesTable">
+        <thead>
+          <tr>
+            <th>Nume cookie</th>
+            <th>Domeniu</th>
+            <th>Categorie</th>
+            <th>Durată</th>
+            <th>Party</th>
+            <th>Metodă</th>
+            <th>Confidence</th>
+            <th>Pagini</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+<tr data-category="Analytics" data-party="third" data-method="known_cookie">
+  <td>_ga</td>
+  <td style="color: #64748b;">.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#fffbeb; color:#b45309">
+      🟡 Analytics
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-third">3rd party</span></td>
+  <td><span class="method-tag method-known">🔷 Dicționar</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:100%"></div>
+      </div>
+      <span class="conf-text">100%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+
+<tr data-category="Analytics" data-party="third" data-method="known_cookie">
+  <td>_ga_L104W0831G</td>
+  <td style="color: #64748b;">.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#fffbeb; color:#b45309">
+      🟡 Analytics
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-third">3rd party</span></td>
+  <td><span class="method-tag method-known">🔷 Dicționar</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:100%"></div>
+      </div>
+      <span class="conf-text">100%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+
+<tr data-category="Analytics" data-party="third" data-method="known_cookie">
+  <td>_gat</td>
+  <td style="color: #64748b;">.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#fffbeb; color:#b45309">
+      🟡 Analytics
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-third">3rd party</span></td>
+  <td><span class="method-tag method-known">🔷 Dicționar</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:100%"></div>
+      </div>
+      <span class="conf-text">100%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+
+<tr data-category="Analytics" data-party="third" data-method="known_cookie">
+  <td>_gid</td>
+  <td style="color: #64748b;">.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#fffbeb; color:#b45309">
+      🟡 Analytics
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-third">3rd party</span></td>
+  <td><span class="method-tag method-known">🔷 Dicționar</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:100%"></div>
+      </div>
+      <span class="conf-text">100%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+
+<tr data-category="Unclassified" data-party="first" data-method="ml_uncertain">
+  <td>cookie_notice_accepted</td>
+  <td style="color: #64748b;">ac.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#f1f5f9; color:#64748b">
+      ⚪ Unclassified
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-first">1st party</span></td>
+  <td><span class="method-tag method-uncertain">⚠ Nesigur</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:49%"></div>
+      </div>
+      <span class="conf-text">49%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+
+<tr data-category="Unclassified" data-party="first" data-method="ml_uncertain">
+  <td>pll_language</td>
+  <td style="color: #64748b;">ac.tuiasi.ro</td>
+  <td>
+    <span class="category-badge" style="background:#f1f5f9; color:#64748b">
+      ⚪ Unclassified
+    </span>
+  </td>
+  <td style="color: #64748b;">Persistent (timestamp)</td>
+  <td><span class="party-tag party-first">1st party</span></td>
+  <td><span class="method-tag method-uncertain">⚠ Nesigur</span></td>
+  <td>
+    <div class="conf-bar-wrap">
+      <div class="conf-bar">
+        <div class="conf-bar-fill" style="width:50%"></div>
+      </div>
+      <span class="conf-text">50%</span>
+    </div>
+  </td>
+  <td style="color: #64748b; text-align:center">20</td>
+</tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generat de Cookie Scanner &middot; 05 May 2026, 12:42 &middot;
+    Informațiile sunt orientative și nu constituie consultanță juridică GDPR.
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// GRAFICE CU CHART.JS
+// ============================================================
+
+// Donut — distribuție categorii
+const ctx1 = document.getElementById('categoriesChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'doughnut',
+  data: {
+    labels: ["Analytics", "Unclassified"],
+    datasets: [{
+      data:            [4, 2],
+      backgroundColor: ["#f59e0b", "#94a3b8"],
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { font: { size: 11 }, padding: 8 }
+      }
+    }
+  }
+});
+
+// Donut — first vs third party
+const ctx2 = document.getElementById('partyChart').getContext('2d');
+new Chart(ctx2, {
+  type: 'doughnut',
+  data: {
+    labels: ["First-party", "Third-party"],
+    datasets: [{
+      data:            [2, 4],
+      backgroundColor: ["#3b82f6", "#ef4444"],
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { font: { size: 11 }, padding: 8 }
+      }
+    }
+  }
+});
+
+// Donut — metode de clasificare
+const ctx3 = document.getElementById('methodChart').getContext('2d');
+new Chart(ctx3, {
+  type: 'doughnut',
+  data: {
+    labels: ["Dic\u021bionar (cert)", "Model ML", "Nesigur"],
+    datasets: [{
+      data:            [4, 0, 2],
+      backgroundColor: ["#1d4ed8", "#6d28d9", "#c2410c"],
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { font: { size: 11 }, padding: 8 }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// ============================================================
+// FILTRARE TABEL — suportă filtre pe categorie, party și metodă
+// ============================================================
+function filterTable(filter, event) {
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+
+  document.querySelectorAll('#cookiesTable tbody tr').forEach(row => {
+    if (filter === 'all') {
+      row.classList.remove('hidden');
+      return;
+    }
+
+    // filter are formatul "tip:valoare" — ex: "cat:Marketing", "party:third", "method:ml"
+    const [type, value] = filter.split(':');
+
+    let show = false;
+    if (type === 'cat')    show = row.dataset.category === value;
+    if (type === 'party')  show = row.dataset.party    === value;
+    if (type === 'method') show = row.dataset.method   === value;
+
+    row.classList.toggle('hidden', !show);
+  });
+}
+</script>
+
+</body>
+</html>

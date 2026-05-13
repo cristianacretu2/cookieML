@@ -1,4 +1,6 @@
 
+xattr -d com.apple.quarantine $(which chromedriver) -> comanda ca sa nu mai dau ok la chromedriver malicous conte
+
 formatul datelor
 
 name,domain,value,expiry,label
