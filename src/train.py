@@ -1,6 +1,6 @@
 
 # scriptul pt a crea modelul. cand actualizam dataset ul il rulam pt a actualiza modelul
-# citeste cookie urile din data se, le transforma in numere si antreneaza modelul randomForest
+# citeste cookie urile din data set, le transforma in numere si antreneaza modelul randomForest
 
 import pandas as pd
 import numpy as np
@@ -108,16 +108,16 @@ print(" Antrenare RandomForest ")
 
 model = RandomForestClassifier(
     n_estimators=200,       # 200 de arbori (mai mult = mai stabil, dar mai lent)
-    max_depth=12,           # adâncimea maximă a fiecărui arbore
+    max_depth=12,           # adancimea maxima a fiecarui arbore
                             # prea mare = overfitting, prea mic = underfitting
-    min_samples_split=5,    # un nod se împarte doar dacă are cel puțin 5 exemple
-                            # previne ca arborii să facă split-uri pe 1-2 exemple (noise)
-    min_samples_leaf=2,     # fiecare frunză trebuie să aibă cel puțin 2 exemple
+    min_samples_split=5,    # un nod se imparte doar daca are cel putin 5 exemple
+                            # previne ca arborii sa faca split uri pe 1-2 exemple (noise)
+    min_samples_leaf=2,     # fiecare frunza trebuie să aiba cel putin 2 exemple
     random_state=42,        # reproductibilitate
-    n_jobs=-1,              # folosește toate core-urile CPU disponibile (mai rapid)
-    class_weight="balanced" # compensează dacă categoriile sunt dezechilibrate
-                            # dacă Marketing are 1000 exemple și Preferences 200,
-                            # fără asta modelul va fi părtinitor spre Marketing
+    n_jobs=-1,              # foloseste toate core-urile CPU disponibile (mai rapid)
+    class_weight="balanced" # compenseaza daca categoriile sunt dezechilibrate
+                            # daca marketing are 1000 exemple și preferences 200,
+                            # fara asta modelul va fi partinitor spre marketing
 )
 
 # fit -> antrenarea propriu zisa - modelul vede datele si construieste arborii
@@ -137,9 +137,9 @@ print(f"\n  Accuracy generala: {accuracy:.1%}")
 
 # raport pt clasificare. pt fiecare categorie arata:
 
-# - Precision: din cei pe care modelul i-a zis "Marketing", câți chiar erau Marketing?
-# - Recall: din toți cookiurile care chiar erau Marketing, câți i-a găsit?
-# - F1-score: media armonică între precision și recall (metrica principală)
+# - Precision: din cei pe care modelul i a zis "Marketing", cati chiar erau Marketing?
+# - Recall: din toate cookiurile care chiar erau Marketing, cate a gasit?
+# - F1-score: media armonica intre precision si recall (metrica principala)
 
 print("\n  Raport per categorie:")
 print(classification_report(

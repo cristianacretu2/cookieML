@@ -92,7 +92,7 @@ def extract_links(html_content, current_url):
     soup = BeautifulSoup(html_content, "html.parser")
     links = []
 
-    # cautam gtoate tagurile cu <a> care au href
+    # cautam toate tagurile cu <a> care au href
     for tag in soup.find_all("a", href=True):
 
         href = tag["href"].strip()
@@ -138,7 +138,7 @@ def crawl_site(start_url, max_pages = 25, delay = 1.0, timeout = 10):
     visited = set()
     found = [] # url uri valide gasite
 
-    session = requests.Session()  # Session reutilizează conexiunile HTTP (mai rapid)
+    session = requests.Session()  # Session reutilizeaza conexiunile HTTP
     session.headers.update(HEADERS)
 
     while queue and len(found)<max_pages:
@@ -154,7 +154,7 @@ def crawl_site(start_url, max_pages = 25, delay = 1.0, timeout = 10):
         print(f"  [{len(found)+1:2d}/{max_pages}] {current_url[:70]}...")
 
         try:
-            # facem requestul http
+            # facem request http
             response = session.get(current_url, timeout=timeout, allow_redirects=True)
 
             # verificam daca raspunsul e ok -> 200

@@ -10,26 +10,6 @@ from src.features import is_third_party
 
 
 # functia de deduplicare
-"""
-    Primește un dict {url: [cookies]} și returnează o listă de cookies unice.
-
-    DE CE E NECESARĂ DEDUPLICAREA?
-    Dacă crawlezi 20 de pagini de pe același site, cookie-ul "_ga" va apărea
-    pe fiecare pagină. Dacă nu deduplicăm, raportul va arăta 20x "_ga"
-    în loc de 1x. Asta denaturează statisticile.
-
-    Criteriul de unicitate: (name, domain) — două cookies cu același nume
-    și domeniu sunt considerate același cookie, chiar dacă valoarea diferă
-    (valoarea se poate schimba la fiecare request).
-
-    Parametri:
-      all_cookies_per_page - dict: { "https://site.ro/pagina": [cookie1, cookie2, ...], ... }
-
-    Returnează:
-      (unique_cookies, page_presence)
-      - unique_cookies: lista de cookies unice
-      - page_presence: dict {(name, domain): nr_pagini} — pe câte pagini a apărut
-    """
 
 def deduplicate_cookies(all_cookies_per_page):
     # dictionar -> cheie: name, domain ; valoare: cookie
@@ -63,27 +43,7 @@ def deduplicate_cookies(all_cookies_per_page):
 
 
 # functie pt scor gdpr
-"""
-    Calculează un scor de risc GDPR pe baza cookies găsite.
 
-    Scorul e între 0 și 100:
-    - 0-30:  Risc scăzut — site-ul folosește puține cookies non-esențiale
-    - 31-60: Risc mediu — are analytics sau câteva cookies marketing
-    - 61-100: Risc ridicat — are marketing tracking extensiv
-
-    LOGICA DE SCORING:
-    Penalizăm fiecare tip de cookie astfel:
-    - Cookie Marketing third-party: -15 puncte (cel mai grav)
-    - Cookie Marketing first-party: -8 puncte
-    - Cookie Analytics third-party: -5 puncte
-    - Cookie Analytics first-party: -2 puncte
-    - Cookie Preferences: -1 punct (mai puțin grav)
-    - Cookie Strictly Necessary: 0 puncte (ok, nu necesită consent)
-
-    Bonus: dacă există un cookie de CookieConsent, reducem scorul (-10)
-
-    Scorul final e normalizat între 0 și 100.
-"""
 def calculate_gdpr_risk(results):
 
     total = len(results)
@@ -106,7 +66,7 @@ def calculate_gdpr_risk(results):
         cat_id = r.get("category_id", -1)
         is_tp = r.get("third_party", False)
 
-        if cat_id == 3:  # Marketing
+        if cat_id == 3:  # marketing
             if is_tp:
                 penalty += 15
                 breakdown["marketing_third_party"] += 1
@@ -114,7 +74,7 @@ def calculate_gdpr_risk(results):
                 penalty += 8
                 breakdown["marketing_first_party"] += 1
 
-        elif cat_id == 2:  # Analytics
+        elif cat_id == 2:  # analytics
             if is_tp:
                 penalty += 5
                 breakdown["analytics_third_party"] += 1
@@ -122,23 +82,23 @@ def calculate_gdpr_risk(results):
                 penalty += 2
                 breakdown["analytics_first_party"] += 1
 
-        elif cat_id == 1:  # Preferences
+        elif cat_id == 1:  # preferences
             penalty += 1
             breakdown["preferences"] += 1
 
-        elif cat_id == 0:  # Strictly Necessary
+        elif cat_id == 0:  # strictly necessary
             breakdown["necessary"] += 1
-            # verificăm dacă există cookie de consent (reduce scorul)
+            # verificam dacă exista cookie de consent
             if "cookieconsent" in r.get("name", "").lower() or \
                     "cookie_consent" in r.get("name", "").lower():
                 breakdown["has_consent_cookie"] = True
 
-        else:  # Unclassified
-            penalty += 3  # penalizăm incertitudinea
-            breakdown["unclassified"] += 1
+        #else:  # penalizare incertitudine ??
+        #    penalty += 3
+        #    breakdown["unclassified"] += 1
 
     # end for
-    # bonus daca exista banner ( cookie de consent)
+    # bonus daca exista banner (cookie de consent)
     if breakdown["has_consent_cookie"]:
         penalty = max(0, penalty - 10)
 
@@ -154,13 +114,12 @@ def gdpr_verdict(score):
     # returneaza verdictul si recomandari bazate pe scor
     if score <= 20:
         return {
-            "level": "Scăzut",
+            "level": "Scazut",
             "color": "green",
-            "emoji": "✅",
-            "verdict": "Site-ul folosește puține cookies non-esențiale.",
+            "verdict": "Site-ul foloseste putine cookies non-esentiale.",
             "actions": [
-                "Verificați că aveți politica de cookies actualizată.",
-                "Asigurați-vă că cookies esențiale nu necesită consent.",
+                "Verificati ca aveți politica de cookies actualizata.",
+                "Asigurati-va ca cookies esentiale nu necesita consent.",
             ]
 
         }
@@ -168,12 +127,11 @@ def gdpr_verdict(score):
         return {
             "level": "Mediu",
             "color": "yellow",
-            "emoji": "⚠️",
-            "verdict": "Site-ul are cookies de analytics care necesită consent.",
+            "verdict": "Site-ul are cookies de analytics care necesita consent.",
             "actions": [
-                "Implementați un banner de cookies conform (OneTrust, CookieYes etc.)",
-                "Blocați cookies analytics până la obținerea consimțământului.",
-                "Actualizați politica de confidențialitate cu toate cookie-urile.",
+                "Implementati un banner de cookies conform (OneTrust, CookieYes etc.)",
+                "Blocati cookies analytics pana la obtinerea consimtamantului.",
+                "Actualizati politica de confidentialitate cu toate cookie-urile.",
             ]
 
         }
@@ -181,14 +139,13 @@ def gdpr_verdict(score):
         return {
             "level": "Ridicat",
             "color": "red",
-            "emoji": "🔴",
-            "verdict": "Site-ul are tracking marketing extensiv — risc GDPR semnificativ.",
+            "verdict": "Site-ul are tracking marketing — risc GDPR semnificativ.",
             "actions": [
-                "OBLIGATORIU: Implementați consent management platform (CMP).",
-                "Blocați TOATE cookies marketing și analytics până la consent.",
-                "Efectuați un audit GDPR complet cu specialist juridic.",
-                "Verificați că aveți bază legală pentru fiecare cookie.",
-                "Asigurați-vă că utilizatorii pot retrage consimțământul ușor.",
+                "OBLIGATORIU: Implementati consent management platform (CMP).",
+                "Blocati TOATE cookies marketing si analytics pana la consent.",
+                "Efectuati un audit GDPR complet cu specialist juridic.",
+                "Verificati că aveti baza legala pentru fiecare cookie.",
+                "Asigurati-va ca utilizatorii pot retrage consimtamantul usor.",
             ]
 
         }
@@ -237,24 +194,6 @@ def _calculate_stats(results):
     }
 
 # FUNCTIA PRINCIPALA DE ANALIZA A SITE ULUI
-"""
-    Analizează cookies colectate de pe tot site-ul.
-
-    Parametri:
-      all_cookies_per_page - dict: { page_url: [cookies_list], ... }
-      site_url             - URL-ul principal al site-ului
-
-    Returnează:
-      dict cu toate datele pentru raport:
-      {
-        "cookies":     [lista cookie-uri procesate],
-        "stats":       {statistici pe categorii},
-        "gdpr_score":  int 0-100,
-        "gdpr_verdict": dict cu verdict și recomandări,
-        "pages_scanned": int,
-        "total_unique": int,
-      }
-"""
 
 def analyze_site(all_cookies_per_page, site_url):
 
@@ -295,7 +234,7 @@ def analyze_site(all_cookies_per_page, site_url):
     # pasul 4 -> statistici
     stats = _calculate_stats(results)
 
-    # pasul 5 -> scro gdpr
+    # pasul 5 -> scor gdpr
     gdpr_score, gdpr_breakdown = calculate_gdpr_risk(results)
     verdict = gdpr_verdict(gdpr_score)
 
@@ -308,4 +247,158 @@ def analyze_site(all_cookies_per_page, site_url):
         "gdpr_verdict": verdict,
         "pages_scanned": len(all_cookies_per_page),
         "total_unique": len(results),
+    }
+
+def analyze_preconsent(preconsent_data, site_url):
+
+    cookies_per_page   = preconsent_data.get("cookies_per_page",   {})
+    resources_per_page = preconsent_data.get("resources_per_page", {})
+
+    # deduplicare
+    unique_cookies, _ = deduplicate_cookies(cookies_per_page)
+
+    # clasificare
+    predictions = predict_batch(unique_cookies, site_url) if unique_cookies else []
+
+    cookie_results = []
+    for cookie, (cat_id, confidence, cat_name, method) in zip(unique_cookies, predictions):
+        name = cookie.get("name", "")
+        domain = cookie.get("domain", "")
+
+        cookie_results.append({
+            "name": name,
+            "domain": domain,
+            "category_id": cat_id,
+            "category": cat_name,
+            "confidence": round(confidence * 100, 1),
+            "third_party": bool(is_third_party(domain, site_url)),
+            "lifespan": _format_lifespan(cookie.get("expiry")),
+            "method": method,
+            # flag pentru cele care nu sunt strictly necessary
+            "is_violation": cat_id != 0 and cat_id != -1,
+        })
+
+    # sortare
+    cookie_results.sort(key=lambda r: (0 if r["is_violation"] else 1, r["name"]))
+
+    # resursele externe
+    seen_resources = {}   # cheie: (domain, tag)
+
+    for page_url, resources in resources_per_page.items():
+        for res in resources:
+            key = (res["domain"], res["tag"])
+            if key not in seen_resources:
+                seen_resources[key] = dict(res)
+                seen_resources[key]["found_on_pages"] = [page_url]
+            else:
+                seen_resources[key]["found_on_pages"].append(page_url)
+
+    all_resources = list(seen_resources.values())
+    all_resources.sort(key=lambda r: (
+        0 if r["risk"] == "high" else (1 if r["risk"] == "medium" else 2),
+        r["domain"]
+    ))
+
+    # calculare scor
+
+    # cookies non esentiale gasite
+    cookie_violations = [r for r in cookie_results if r["is_violation"]]
+
+    # din resurse
+    resource_violations = [
+        r for r in all_resources
+        if r["category_id"] in (2, 3)  # analytics sau marketing
+    ]
+
+    # calculare scor
+    penalty = 0
+    for r in cookie_violations:
+        if r["category_id"] == 3:
+            penalty += 20  # marketing cookie pre consent
+        elif r["category_id"] == 2:
+            penalty += 10  # analytics cookie pre consent
+        else:
+            penalty += 5  # preferences
+
+    for r in resource_violations:
+        if r["category_id"] == 3 and r["tag"] == "script":
+            penalty += 15
+        elif r["category_id"] == 3:
+            penalty += 10
+        elif r["category_id"] == 2 and r["tag"] == "script":
+            penalty += 8
+        elif r["category_id"] == 2:
+            penalty += 5
+
+    conformity_score = min(100, penalty)
+
+    # statistici resurse pe categorie
+    resources_by_category = {}
+    for r in all_resources:
+        cat = r["category"]
+        resources_by_category[cat] = resources_by_category.get(cat, 0) + 1
+
+    resources_by_tag = {}
+    for r in all_resources:
+        tag = r["tag"]
+        resources_by_tag[tag] = resources_by_tag.get(tag, 0) + 1
+
+    return {
+        "site_url": site_url,
+        "pages_scanned": len(cookies_per_page),
+        # cookies
+        "cookies": cookie_results,
+        "cookie_violations": cookie_violations,
+        "n_cookie_violations": len(cookie_violations),
+        # resurse externe
+        "resources": all_resources,
+        "resource_violations": resource_violations,
+        "n_resource_violations": len(resource_violations),
+        # statistici
+        "resources_by_category": resources_by_category,
+        "resources_by_tag": resources_by_tag,
+        "total_cookies": len(cookie_results),
+        "total_resources": len(all_resources),
+        # scor
+        "conformity_score": conformity_score,
+        "is_compliant": conformity_score == 0,
+    }
+
+def compare_analyses(pre_data, post_data):
+    pre_names = {c["name"] for c in pre_data.get("cookies", [])}
+    post_names = {c["name"] for c in post_data.get("cookies", [])}
+
+    # cookies care au aparut doar dupa consent — ok
+    cookies_added_after = [
+        c for c in post_data.get("cookies", [])
+        if c["name"] not in pre_names
+    ]
+
+    # cookies prezente si inainte de consent — ? problema
+    cookies_present_before = [
+        c for c in post_data.get("cookies", [])
+        if c["name"] in pre_names and c["category_id"] not in (0, -1)
+    ]
+
+    # ce nu ar trebui sa existe pre consent
+    pre_violations = pre_data.get("cookie_violations", [])
+
+    return {
+        "pre_cookie_count": pre_data.get("total_cookies", 0),
+        "post_cookie_count": post_data.get("total_unique", 0),
+        "cookies_added_after": cookies_added_after,
+        "n_added_after": len(cookies_added_after),
+        "cookies_present_before": cookies_present_before,
+        "n_present_before": len(cookies_present_before),
+        "pre_violations": pre_violations,
+        "n_pre_violations": len(pre_violations),
+        "pre_resource_violations": pre_data.get("resource_violations", []),
+        "n_resource_violations": pre_data.get("n_resource_violations", 0),
+        "gdpr_pre_score": pre_data.get("conformity_score", 0),
+        "gdpr_post_score": post_data.get("gdpr_score", 0),
+        # verdict final combinat
+        "overall_compliant": (
+                pre_data.get("conformity_score", 0) == 0 and
+                post_data.get("gdpr_score", 0) <= 30
+        ),
     }

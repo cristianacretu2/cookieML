@@ -21,18 +21,25 @@ import os
 # FUNCȚIA PRINCIPALĂ: generate_report()
 # =============================================================================
 
-def generate_report(analysis_data, output_path="report.html"):
+def generate_report(post_analysis, pre_analysis=None, comparison=None, output_path="report.html"):
     """
-    Generează raportul HTML complet.
+    Generează raportul HTML complet cu doua sectiuni (Pre + Post consent).
 
     Parametri:
-      analysis_data - dict returnat de analyzer.analyze_site()
+      post_analysis - dict returnat de analyzer.analyze_site()
+      pre_analysis  - dict returnat de analyzer.analyze_preconsent() (optional)
+      comparison    - dict returnat de analyzer.compare_analyses() (optional)
       output_path   - unde se salvează fișierul HTML
 
     Returnează:
       calea absolută a fișierului generat
     """
-    html = _build_html(analysis_data)
+    # suport backward-compat: daca e apelat cu un singur argument
+    if isinstance(post_analysis, dict) and "cookies" in post_analysis and pre_analysis is None:
+        analysis_data = post_analysis
+    else:
+        analysis_data = post_analysis
+    html = _build_html(analysis_data, pre_analysis=pre_analysis, comparison=comparison)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
@@ -47,7 +54,7 @@ def generate_report(analysis_data, output_path="report.html"):
 # BUILDER HTML — construiește fișierul HTML complet
 # =============================================================================
 
-def _build_html(data):
+def _build_html(data, pre_analysis=None, comparison=None):
     """Construiește HTML-ul complet al raportului."""
 
     site_url      = data["site_url"]
@@ -118,6 +125,10 @@ def _build_html(data):
         "data":   [n_known, n_ml, n_uncertain],
         "colors": ["#1d4ed8", "#6d28d9", "#c2410c"]
     }
+
+    # construim sectiunea pre-consent
+    _pre_consent_html = _build_preconsent_section(pre_analysis, comparison)
+
 
     return f"""<!DOCTYPE html>
 <html lang="ro">
@@ -585,7 +596,7 @@ def _build_html(data):
         <div class="gdpr-score-label">din 100</div>
       </div>
       <div class="gdpr-verdict-level">
-        {verdict['emoji']} Risc {verdict['level']}
+        Risc {verdict['level']}
       </div>
       <div class="gdpr-verdict-text">{verdict['verdict']}</div>
     </div>
@@ -668,6 +679,11 @@ def _build_html(data):
       </table>
     </div>
   </div>
+
+  <!-- ================================================================
+       SECTIUNEA PRE-CONSENT — generata dinamic cu Python
+       ================================================================ -->
+  {_pre_consent_html}
 
   <div class="footer">
     Generat de Cookie Scanner &middot; {scan_date} &middot;
@@ -799,6 +815,184 @@ function filterTable(filter, event) {{
 # BUILDER RÂNDURI TABEL
 # =============================================================================
 
+def _build_preconsent_section(pre_analysis, comparison):
+    """Construieste HTML-ul pentru sectiunea Analiza 1 - Pre-Consent."""
+    if not pre_analysis or not isinstance(pre_analysis, dict):
+        return ""
+
+    score      = pre_analysis.get("conformity_score", 0)
+    n_cookies  = pre_analysis.get("total_cookies", 0)
+    n_viols    = pre_analysis.get("n_cookie_violations", 0)
+    n_res      = pre_analysis.get("total_resources", 0)
+    n_res_viols= pre_analysis.get("n_resource_violations", 0)
+    pages_scanned = pre_analysis.get("pages_scanned", 0)
+
+    # culoare scor conformitate (inversat fata de GDPR score — 0 = bine)
+    if score == 0:
+        score_color = "#22c55e"; score_bg = "#f0fdf4"; verdict_text = "Conform GDPR"
+        verdict_emoji = "✅"
+    elif score <= 30:
+        score_color = "#f59e0b"; score_bg = "#fffbeb"; verdict_text = "Partial neconform"
+        verdict_emoji = "⚠️"
+    else:
+        score_color = "#ef4444"; score_bg = "#fef2f2"; verdict_text = "Neconform GDPR"
+        verdict_emoji = "🔴"
+
+    # tabel cookies pre-consent
+    cookie_rows = ""
+    for c in pre_analysis.get("cookies", []):
+        is_v = c.get("is_violation", False)
+        row_bg = 'style="background:#fef2f2"' if is_v else ""
+        violation_badge = '<span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">⚠ VIOLATIE</span>' if is_v else '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ OK</span>'
+        cookie_rows += f"""
+<tr {row_bg}>
+  <td style="font-family:monospace;font-size:12px;font-weight:600">{c['name']}</td>
+  <td style="color:#64748b">{c['domain']}</td>
+  <td>{c['category']}</td>
+  <td>{violation_badge}</td>
+</tr>"""
+
+    # tabel resurse externe
+    resource_rows = ""
+    risk_colors = {"high": ("#fef2f2", "#dc2626"), "medium": ("#fffbeb", "#d97706"), "low": ("#f0fdf4", "#16a34a")}
+    for r in pre_analysis.get("resources", []):
+        bg, fg = risk_colors.get(r["risk"], ("#f1f5f9", "#64748b"))
+        tag_icon = {"iframe": "🖼", "script": "📜", "img": "🖼", "link": "🔗"}.get(r["tag"], "📄")
+        tracker_label = r["tracker"] or "Necunoscut"
+        pages_count = len(r.get("found_on_pages", []))
+        resource_rows += f"""
+<tr>
+  <td style="font-family:monospace;font-size:11px">{tag_icon} &lt;{r['tag']}&gt;</td>
+  <td style="font-weight:600">{r['domain']}</td>
+  <td>{tracker_label}</td>
+  <td>{r['category']}</td>
+  <td><span style="background:{bg};color:{fg};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">{r['risk'].upper()}</span></td>
+  <td style="text-align:center;color:#64748b">{pages_count}</td>
+</tr>"""
+
+    # sectiunea de comparatie
+    comparison_html = ""
+    if comparison:
+        n_added   = comparison.get("n_added_after", 0)
+        n_before  = comparison.get("n_present_before", 0)
+        comparison_html = f"""
+<div class="card" style="margin-bottom:24px">
+  <div class="card-title">📊 Comparatie Pre vs Post Consent</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="text-align:center;padding:16px;background:#f8fafc;border-radius:8px">
+      <div style="font-size:32px;font-weight:800;color:#6366f1">{comparison.get('pre_cookie_count',0)}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">cookies inainte de consent</div>
+    </div>
+    <div style="text-align:center;padding:16px;background:#f8fafc;border-radius:8px">
+      <div style="font-size:32px;font-weight:800;color:#22c55e">{n_added}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">adaugate DUPA consent ✓</div>
+    </div>
+    <div style="text-align:center;padding:16px;background:#{'fef2f2' if n_before > 0 else 'f0fdf4'};border-radius:8px">
+      <div style="font-size:32px;font-weight:800;color:#{'dc2626' if n_before > 0 else '16a34a'}">{n_before}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">non-esentiale prezente si inainte ⚠</div>
+    </div>
+  </div>
+  <p style="font-size:13px;color:#64748b;line-height:1.6">
+    <strong>Interpretare:</strong> Cookies adaugate DUPA consent = comportament corect GDPR.
+    Cookies non-esentiale prezente SI inainte de consent = potentiala incalcare ePrivacy Art. 5(3).
+  </p>
+</div>"""
+
+    return f"""
+  <!-- ============================================================
+       ANALIZA 1 — PRE-CONSENT
+       ============================================================ -->
+  <div style="margin:40px 0 16px">
+    <h2 style="font-size:22px;font-weight:700;color:#1e293b">
+      🔒 Analiza 1 — Pre-Consent
+    </h2>
+    <p style="color:#64748b;font-size:14px;margin-top:4px">
+      Scanare pe {pages_scanned} pagini reprezentative, browser incognito, fara nicio interactiune cu bannerul de cookies.
+      Conform standardului EDPB, doar cookies <strong>Strictly Necessary</strong> ar trebui sa existe in aceasta faza.
+    </p>
+  </div>
+
+  <!-- Metrici pre-consent -->
+  <div class="metrics-grid" style="margin-bottom:24px">
+    <div class="metric-card" style="--accent:{score_color}">
+      <div class="metric-label">Scor Conformitate</div>
+      <div class="metric-value" style="color:{score_color}">{score}</div>
+      <div class="metric-sub">{verdict_emoji} {verdict_text}</div>
+    </div>
+    <div class="metric-card" style="--accent:#6366f1">
+      <div class="metric-label">Cookies gasite</div>
+      <div class="metric-value">{n_cookies}</div>
+      <div class="metric-sub">inainte de consent</div>
+    </div>
+    <div class="metric-card" style="--accent:#ef4444">
+      <div class="metric-label">Violari cookies</div>
+      <div class="metric-value" style="color:{'#ef4444' if n_viols > 0 else '#22c55e'}">{n_viols}</div>
+      <div class="metric-sub">non-esentiale pre-consent</div>
+    </div>
+    <div class="metric-card" style="--accent:#f59e0b">
+      <div class="metric-label">Resurse externe</div>
+      <div class="metric-value">{n_res}</div>
+      <div class="metric-sub">{n_res_viols} trackeri detectati</div>
+    </div>
+  </div>
+
+  {comparison_html}
+
+  <!-- Tabel cookies pre-consent -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title">🍪 Cookies gasite inainte de consent ({n_cookies})</div>
+    <p style="font-size:12px;color:#64748b;margin-bottom:16px">
+      Cookies marcate ca VIOLATIE sunt non-esentiale (Analytics/Marketing/Preferences)
+      si nu ar trebui sa existe inainte ca utilizatorul sa accepte bannerul.
+    </p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Nume cookie</th>
+            <th>Domeniu</th>
+            <th>Categorie</th>
+            <th>Status GDPR</th>
+          </tr>
+        </thead>
+        <tbody>{cookie_rows if cookie_rows else '<tr><td colspan="4" style="text-align:center;color:#22c55e;padding:20px">✅ Niciun cookie gasit inainte de consent</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabel resurse externe -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title">🌐 Resurse externe detectate in HTML ({n_res})</div>
+    <p style="font-size:12px;color:#64748b;margin-bottom:16px">
+      Aceste resurse (iframe, script, img) se incarca <strong>automat</strong> cand utilizatorul viziteaza pagina,
+      trimitand date catre domenii externe fara consent explicit. Risc HIGH = potentiala incalcare ePrivacy.
+    </p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tag HTML</th>
+            <th>Domeniu extern</th>
+            <th>Tracker</th>
+            <th>Categorie</th>
+            <th>Risc</th>
+            <th>Pagini</th>
+          </tr>
+        </thead>
+        <tbody>{resource_rows if resource_rows else '<tr><td colspan="6" style="text-align:center;color:#22c55e;padding:20px">✅ Nicio resursa externa de tracking detectata</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Separator vizual -->
+  <div style="border-top:2px solid #e2e8f0;margin:40px 0 32px;position:relative">
+    <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#f8fafc;padding:0 16px;font-size:13px;color:#94a3b8;font-weight:600">
+      ANALIZA 2 — POST-CONSENT
+    </span>
+  </div>
+"""
+
+
 def _build_table_rows(cookies, category_colors):
     """Construiește HTML-ul pentru rândurile tabelului."""
     rows = []
@@ -919,5 +1113,5 @@ if __name__ == "__main__":
         },
     }
 
-    generate_report(demo_data, "demo_report.html")
+    generate_report(demo_data, output_path="demo_report.html")
     print("Deschide demo_report.html în browser!")

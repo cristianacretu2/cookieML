@@ -66,37 +66,6 @@ except FileNotFoundError:
 
 # functia principala
 
-"""
-    Clasifică un cookie și returnează categoria și nivelul de încredere.
-
-    Logica în 3 pași (în ordine de prioritate):
-
-    PASUL 1: Verificăm în KNOWN_COOKIES
-      Dacă numele cookie-ului e în dicționarul nostru hardcodat,
-      returnăm direct răspunsul cu 100% confidence.
-      Exemple: "_ga" -> Analytics(2), "_fbp" -> Marketing(3)
-
-    PASUL 2: Verificăm reputația domeniului
-      Dacă domeniul e un tracker cunoscut (.doubleclick.net etc.),
-      putem folosi asta ca semnal puternic.
-
-    PASUL 3: Modelul ML
-      Dacă nu știm din regulile hardcodate, lăsăm modelul să decidă.
-      Folosim predict_proba() pentru a obține probabilitățile pentru
-      fiecare categorie, nu doar câștigătorul.
-
-    Parametri:
-      cookie - dicționar cu datele cookie-ului
-      domain - URL-ul site-ului scanat (pentru third-party detection)
-
-    Returnează:
-      (category_id, confidence, category_name, method)
-      - category_id: 0-3 sau -1 pentru Unclassified
-      - confidence: float 0.0-1.0
-      - category_name: string cu numele categoriei
-      - method: "known"|"ml"|"unclassified" (pentru debugging/raport)
-    """
-
 def predict_cookie(cookie, domain):
 
     name = str(cookie.get("name", "") )
@@ -127,7 +96,7 @@ def predict_cookie(cookie, domain):
     # predicgt_proba returneaza un array cu probabilitatea pt fiecare categorie
 
 
-    # luam categoria cu probabilitate maxim
+    # luam categoria cu probabilitate maxi
 
     cat_id = int(np.argmax(probabilities))
     confidence = float(probabilities[cat_id])
@@ -148,15 +117,6 @@ def predict_cookie(cookie, domain):
         "ml"
     )
 
-
-"""
-    Clasifică o listă de cookies mai eficient (o singură trecere prin model).
-
-    Pentru un site cu 50+ cookies, e mai rapid decât a apela predict_cookie()
-    de 50 de ori individual.
-
-    Returnează: listă de tupluri (category_id, confidence, category_name, method)
-    """
 def predict_batch(cookies, domain): # cookies e o lista
     results = []
     unknown_cookies = [] # din cookies, cele care nu sunt un known, in dictionar

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# ./run.sh https://site.ro
-# ./run.sh https://site.ro --max-pages 10
-# ./run.sh https://site.ro --max-pages 5 --output raport_custom.html
 
 if [ -z "$1" ]; then
     echo "Eroare: Introdu URL."
@@ -20,6 +17,6 @@ fi
 
 echo "Pornire scanare pentru: $1"
 
-# transmitem TOȚI parametrii mai departe către main.py
+# transmitem toti parametrii catre main
 # $@ = toate argumentele date lui run.sh
 python3 main.py "$@"

@@ -50,3 +50,9 @@ https://cookie-script.com/quick-report?identifier=d9b6ed12d6f58c3eaf05333d03e577
 # - Media a 200 de arbori e mult mai stabilă decât unul singur
 #
 # Analogia: întrebi 200 de experți independenți, nu te bazezi pe unul singur.
+
+Cookie Scanner care arata toate cookie urile. Le arata pe cele care sunt vizibile si in application
+Trebuie facut sa le vada si pe cele externe + localStorage, SessionStorage
+Sursa de inspiratie: CookieScript
+
+
